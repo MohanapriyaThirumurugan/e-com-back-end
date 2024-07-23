@@ -74,10 +74,13 @@ const logoutUser = (req, res, next) => {
 }
 const forgotpasword=(asyncerrorhandler(async(req,res,next)=>{
     const user=await userdata.findOne({email:req.body.email})
+    console.log(user);
     if(!user){
         return next(new ErrorHandler('user not found',404) )
 }
 const resettoken=user.getResetToken()
+await user.save({ validateBeforeSave: false });
+
 console.log(resettoken);
 
 
@@ -117,8 +120,8 @@ try {
 const resetPassword = asyncerrorhandler( async (req, res, next) => {
     
     const resetPasswordToken =  crypto.createHash('sha256').update(req.params.token).digest('hex'); 
-    console.log("Token from URL:", req.params.token);
-    console.log("Hashed token:", resetPasswordToken);
+    // console.log("Token from URL:", req.params.token);
+    // console.log("Hashed token:", resetPasswordToken);
  
      const user = await userdatabase.findOne( {
          resetPasswordToken,
