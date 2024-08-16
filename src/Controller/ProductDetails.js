@@ -97,6 +97,8 @@ const getproductall = async (req, res, next) => {
   
   const createproduct = errorhandlerasync(async (req, res) => {
     const { name, category } = req.body;
+    console.log(name,category);
+    
     req.body.user = req.user.id;
     let images = [];
     let BASE_URL = process.env.BACKEND_URL;
