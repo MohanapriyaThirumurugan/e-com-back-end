@@ -18,6 +18,6 @@ async function connectToDatabase () {
   }
 export default connectToDatabase
  
-export{
-  mongoose
-}
+// export{
+//   mongoose
+// }

@@ -1,4 +1,4 @@
-import { mongoose } from './index.js';
+import  mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
