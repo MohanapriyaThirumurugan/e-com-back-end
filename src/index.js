@@ -32,6 +32,10 @@ const upload = multer();
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
+app.get('/',((req,res)=>{
+    res.send("helloo")
+
+}))
 app.use('/', ProductRoutes);
 app.use('/', userroutes);
 app.use('/', Orderroutes);
