@@ -13,12 +13,14 @@ const storage = new CloudinaryStorage({
     public_id: (req, file) => file.originalname.split('.')[0]
   },
 });
-
+// multer for storing the img
 const upload = multer({ storage: storage });
 
 const router = express.Router();
 
-router.get('/getall', ProductDetails.getproductall);
+router.get('/getall', ProductDetails.getAllProduct);
+router.get('/pro/search', ProductDetails.searchProducts );
+router.get('/products/paginate', ProductDetails.paginateProducts);
 router.post('/createproduct', upload.array('images'), cookies.sendTokenInHeader, cookies.authorizeRoles('admin'), ProductDetails.createproduct);
 router.get('/getproductbyid/:id', cookies.sendTokenInHeader, ProductDetails.getproductbyid);
 router.put('/edit/:id', upload.array('images'), cookies.sendTokenInHeader, cookies.authorizeRoles('admin'), ProductDetails.editproductbyid);

@@ -8,41 +8,37 @@ import cloudinary from "../cloudinary.js";
 import CryptoJS from "crypto-js";
 import userdatabase from "../Models/userDetails.js";
 import crypto from 'crypto';
-import { log } from "console";
+import dotenv from 'dotenv'
+dotenv.config()
 
 
 
 // register user
+const register = async (req, res, next) => {
+    try {
+        console.log("Request body:", req.body);
+        console.log("Request file:", req.file);
 
-const register=errorhandlerasync(async(req,res,next)=>{
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file)
-    const {name,email,password}=req.body
-    let avatar = [];
-    let BASE_URL = process.env.BACKEND_URL;
-    if(process.env.NODE_ENV === "production"){
-        BASE_URL = `${req.protocol}://${req.get('host')}`
+        const { name, email, password } = req.body;
+        let avatar = [];
+
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, { folder: 'user' });
+            avatar = result.secure_url; // Save the URL directly
+        }
+
+        const user = await userdata.create({
+            name,
+            email,
+            password,
+            avatar
+        });
+
+        sendtoken(user, 201, res);
+    } catch (error) {
+        next(error); // Pass the error to the error handling middleware
     }
-
-  
-    if (req.file) {
-        const result = await cloudinary.uploader.upload(req.file.path, { folder: 'user' });
-        // avatar.push({ image: result.secure_url });
-        avatar = result.secure_url; // Save the URL directly
-
-    }
-
-
-    const user=await userdata.create({
-        name,
-        email,
-        password,
-        avatar
-    })
-    sendtoken(user,201,res)
-})
-
-
+};
 const login =errorhandlerasync(async(req,res,next)=>{
     const {email,password}=req.body
     if(!password||!email){
@@ -187,24 +183,16 @@ const getUserProfile = asyncerrorhandler(async (req, res, next) => {
     })
  })
  
-
-
-
 const updateprofile = asyncerrorhandler(async (req, res, next) => {
     try {
         let newUserData = {
             name: req.body.name,
             email: req.body.email
-        };
-        let BASE_URL = process.env.BACKEND_URL;
-        if(process.env.NODE_ENV === "production"){
-            BASE_URL = `${req.protocol}://${req.get('host')}`
         }
-    
         if (req.file) {
-            newUserData.avatar = `${BASE_URL}/uploads/user/${req.file.originalname}`;
+            const result = await cloudinary.uploader.upload(req.file.path, { folder: 'user' });
+            newUserData.avatar = result.secure_url; // Add avatar URL to user data
         }
-
 
         const user = await userdata.findByIdAndUpdate(req.params.id, newUserData, {
             new: true,
@@ -215,9 +203,9 @@ const updateprofile = asyncerrorhandler(async (req, res, next) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        res.status(200).json({ 
-            success: true, 
-            user 
+        res.status(200).json({
+            success: true,
+            user
         });
     } catch (error) {
         console.error("Error updating user:", error);
@@ -226,9 +214,7 @@ const updateprofile = asyncerrorhandler(async (req, res, next) => {
 });
 
 
-// this part for admin only
 
-//Admin: Get All Users - 
 const getAllUsers = asyncerrorhandler(async (req, res, next) => {
     const users = await userdata.find();
     res.status(200).json({

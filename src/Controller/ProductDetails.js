@@ -6,54 +6,54 @@ import apifeature from '../utils/apifeature.js'
 import cloudinary from "../cloudinary.js";
 import mongoose from "mongoose";
 
-const getproductall = async (req, res, next) => {
-    try {
-      const resPerPage = 10;
+// const getproductall = async (req, res, next) => {
+//     try {
+//       const resPerPage = 10;
   
-      // Build the query function
-      const buildqurey = () => {
-        return new apifeature(Productdatabase.find(), req.query)
-          .search()
-          .filter();
-      };
+//       // Build the query function
+//       const buildqurey = () => {
+//         return new apifeature(Productdatabase.find(), req.query)
+//           .search()
+//           .filter();
+//       };
   
-      console.log("Request Query:", req.query);
+//       console.log("Request Query:", req.query);
   
-      // First build the query to get the count of filtered products
-      const filterQuery = buildqurey();
-      const filterproduct = await filterQuery.query.countDocuments({});
-      const totalproduct = await Productdatabase.countDocuments({});
+//       // First build the query to get the count of filtered products
+//       const filterQuery = buildqurey();
+//       const filterproduct = await filterQuery.query.countDocuments({});
+//       const totalproduct = await Productdatabase.countDocuments({});
   
-      let productcount = totalproduct;
-      if (filterproduct !== totalproduct) {
-        productcount = filterproduct;
-      }
+//       let productcount = totalproduct;
+//       if (filterproduct !== totalproduct) {
+//         productcount = filterproduct;
+//       }
   
-      // Log the product counts
-      console.log("Filtered Product Count:", filterproduct);
-      console.log("Total Product Count:", totalproduct);
+//       // Log the product counts
+//       console.log("Filtered Product Count:", filterproduct);
+//       console.log("Total Product Count:", totalproduct);
   
-      // Build the query again for fetching the actual products with pagination
-      const paginatedQuery = buildqurey().paginate(resPerPage);
-      const products = await paginatedQuery.query;
+//       // Build the query again for fetching the actual products with pagination
+//       const paginatedQuery = buildqurey().paginate(resPerPage);
+//       const products = await paginatedQuery.query;
   
-      // Log the products to debug
-      console.log("Fetched Products:", products);
+//       // Log the products to debug
+//       console.log("Fetched Products:", products);
   
-      res.status(200).send({
-        success: true,
-        count: productcount,
-        resPerPage,
-        products,
-      });
-    } catch (error) {
-      res.status(500).send({
-        success: false,
-        message: "Error fetching products",
-        error: error.message,
-      });
-    }
-  };
+//       res.status(200).send({
+//         success: true,
+//         count: productcount,
+//         resPerPage,
+//         products,
+//       });
+//     } catch (error) {
+//       res.status(500).send({
+//         success: false,
+//         message: "Error fetching products",
+//         error: error.message,
+//       });
+//     }
+//   };
 
 // const getproductall = async (req, res, next) => {
 //     try {
@@ -92,19 +92,100 @@ const getproductall = async (req, res, next) => {
 //     }
 // };
 
+const getAllProduct = async (req, res) => {
+    try {
+      const products = await Productdatabase.find(); // Fetch all products from the database
+      
+      res.status(200).send({
+        success: true,
+        count: products.length,
+        products,
+      });
+    } catch (error) {
+      res.status(500).send({
+        success: false,
+        message: "Error fetching products",
+        error: error.message,
+      });
+    }
+  };
 
+
+//http://localhost:8000/getall/search?category=Mobile phones
+
+  const searchProducts = async (req, res) => {
+    try {
+        const keyword = req.query.keyword || '';  // Get the keyword from the query parameters
+        const query = {
+            $or: [
+                { name: new RegExp(keyword, 'i') },          // Search in name (case-insensitive)
+                { description: new RegExp(keyword, 'i') },   // Search in description (case-insensitive)
+                // Add more fields as needed
+            ]
+        };
+
+        const productsearch = await Productdatabase.find(query);
+
+        res.status(200).send({
+            success: true,
+            count: productsearch.length,
+            productsearch,
+        });
+    } catch (error) {
+        res.status(500).send({
+            success: false,
+            message: "Error searching products",
+            error: error.message,
+        });
+    }
+};
 
   
-  const createproduct = errorhandlerasync(async (req, res) => {
+  
+  
+ const paginateProducts = async (req, res) => {
+    try {
+      const resPerPage = Number(req.query.limit) || 10; // Default to 10 products per page
+      const currentPage = Number(req.query.page) || 1;
+  
+      const skip = resPerPage * (currentPage - 1);
+  
+      const products = await Productdatabase.find()
+        .skip(skip)
+        .limit(resPerPage);
+  
+      const productCount = await Productdatabase.countDocuments();
+  
+      res.status(200).send({
+        success: true,
+        count: productCount,
+        products,
+        currentPage,
+        totalPages: Math.ceil(productCount / resPerPage)
+      });
+    } catch (error) {
+      res.status(500).send({
+        success: false,
+        message: "Error paginating products",
+        error: error.message,
+      });
+    }
+  };
+  
+  
+    
+  
+  
+const createproduct = errorhandlerasync(async (req, res) => {
     const { name, category } = req.body;
     console.log(name,category);
     
     req.body.user = req.user.id;
     let images = [];
-    let BASE_URL = process.env.BACKEND_URL;
-    if(process.env.NODE_ENV === "production"){
-        BASE_URL = `${req.protocol}://${req.get('host')}`
-    }
+    // let BASE_URL = process.env.BACKEND_URL;
+    // if(process.env.NODE_ENV === "production"){
+    //     BASE_URL = `${req.protocol}://${req.get('host')}`
+    // }
 
   
     if (req.files.length > 0) {
@@ -230,58 +311,6 @@ const editproductbyid = async (req, res, next) => {
         });
     }
 };
-
-
-// for create reveiw and update
-// const createreveiw=asyncerrorhandler(async(req,res,next)=>{
-// try {
-//     const {productID,rating,comment}=req.body
-//     const reveiwobj={
-//         user:req.user.id,  //get the id from who login is
-//         rating,
-//         comment
-//     }
-//     const product=await Productdatabase.findById(productID)
-//     const isreviewed=product.reviews.find(obj=>{
-//         // to find user is reveiwed or not
-//         obj.user.toString()==req.user.id.toString()
-//     })
-//     if(isreviewed){
-//         product .reviews.forEach(obj=>{
-//             // obj is inside reveiw in database    //req id is params is same or not
-//             if(obj.user.toString()==req.id.toString()){
-//                 obj.comment=comment
-//                 obj.rating=rating
-//             }
-//         }
-//         )
-
-//     }
-//     //else part not reveiwed by user insteat create
-//   else{
-//     // create reviw
-//         product.reviews.push(reveiwobj)
-//         product.numOfReviews=product.reviews.length
-//   }
-//         product.ratings=product.reviews.reduce((acc,current)=>{
-//             return current.rating + acc
-        
-//         },0)/product.reviews.length
-//         product.ratings =isNaN(product.ratings)?0:product.ratings
-//         await product.save({validateBeforeSave:false})
-//         res.status(200).json({
-//             sucesses:true
-        
-//         })
-    
-// } catch (error) {
-//     console.log(error);
-    
-// }
-// // this rating and avrage the rating
-
-// })
-
 const createreveiw = asyncerrorhandler(async (req, res, next) => {
     // const { id  } = req.params;
 
@@ -416,7 +445,7 @@ const getAdminProducts=asyncerrorhandler(async(req,res,next)=>{
 })
 
 export default{
-    getproductall,
+    getAllProduct,
     createproduct,
     getproductbyid,
     deleteproductbyid,
@@ -425,6 +454,8 @@ export default{
     getReviews,
     deleteReview,
     getAdminProducts,
+    searchProducts,
+    paginateProducts,
 
     
 }
